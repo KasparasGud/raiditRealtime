@@ -1,0 +1,2 @@
+﻿agency_id,agency_name,agency_url,agency_timezone,agency_phone,agency_lang
+kaunas,"Kauno miesto savivaldybės administracija",http://www.kaunas.lt/transportas/viesasis-transportas/,Europe/Vilnius,8 800 70010,lt

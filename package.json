@@ -1,0 +1,43 @@
+{
+  "name": "raiditrealtime",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@mapbox/polyline": "^1.0.0",
+    "@turf/bearing": "^6.0.1",
+    "@turf/distance": "^6.0.0",
+    "@turf/length": "^6.0.0",
+    "@turf/nearest-point-on-line": "^6.0.1",
+    "async": "^2.6.0",
+    "bomstrip": "^0.1.4",
+    "char-spinner": "^1.0.1",
+    "cheap-ruler": "^2.5.1",
+    "commander": "^2.7.0",
+    "concat-stream": "^2.0.0",
+    "csv": "^5.0.0",
+    "csv-express": "^1.2.2",
+    "express": "^4.16.4",
+    "geobuf": "^3.0.0",
+    "gtfs-realtime-bindings": "0.0.4",
+    "moment": "^2.10.6",
+    "node-fetch": "^2.3.0",
+    "papaparse": "^4.6.3",
+    "require-all": "^3.0.0",
+    "tconsole": "^1.0.0",
+    "turf-featurecollection": "^1.0.1",
+    "turf-linestring": "^1.0.2",
+    "turf-point": "^2.0.0",
+    "underscore": "^1.9.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.10",
+    "standard": "^12.0.1",
+    "tap": "^12.0.1"
+  }
+}

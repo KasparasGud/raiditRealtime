@@ -14,6 +14,7 @@ module.exports = async function(app, db) {
   var vilniusRealtime = [];
   var vilniusStatic = [];
   var matched = [];
+  var tracks = [];
 
   transit.importGTFS(
     "/Users/kgudzius/raiditRealtime/app/data/vilnius",
@@ -71,6 +72,7 @@ module.exports = async function(app, db) {
           tripId: static.tripId,
           lastRealtime: [max.Ilguma / 1000000, max.Platuma / 1000000],
           lastMeasured: max.MatavimoLaikas,
+          lastSpeed: parseInt(max.Greitis),
           shortName: static.routeShortName,
           color: static.routeColor,
           textColor: static.routeTextColor,
@@ -81,11 +83,72 @@ module.exports = async function(app, db) {
       });
 
       matched = matchedTrips;
-    }, 10000);
+    }, 5000);
+
+    setInterval(() => {
+      var creationTime = moment().valueOf();
+      var theTime = moment();
+      var seconds =
+        theTime.get("hour") * 3600 +
+        theTime.get("minutes") * 60 +
+        theTime.get("seconds");
+      tracks = [];
+      matched.forEach((trip,index) => {
+        //construct current tracks
+        //find where the realtimepoint lies on the track
+        var point = ruler.pointOnLine(trip.coordinates, trip.lastRealtime)
+          .point;
+        //slice the start of the line to find disance
+        var discardedTrack = ruler.lineSlice(
+          trip.coordinates[0],
+          point,
+          trip.coordinates
+        );
+        var discardedDistance = ruler.lineDistance(discardedTrack);
+        //find another predicted point based on how much time passed since last measurement
+        //find the end point where to split the line at the end
+        var time =
+          trip.arrivalTime / 1000 + trip.offset - trip.departureTime / 1000;
+        var staticSpeed = trip.distance / time;
+        var speed = staticSpeed / 1.1
+        if(trip.lastSpeed === 0) {
+          speed = staticSpeed / 2
+        }
+        var secondsSinceMeasured = seconds - trip.lastMeasured;
+        var delta = speed * secondsSinceMeasured;
+        var realtimePredictionDistance = discardedDistance + delta;
+        var endDelta = delta + speed * 15;
+        var realtimeFuturePredictionDistance = discardedDistance + endDelta;
+        var realtimePrediction = ruler.along(
+          trip.coordinates,
+          realtimePredictionDistance
+        );
+        var realtimePredictionEnd = ruler.along(
+          trip.coordinates,
+          realtimeFuturePredictionDistance
+        );
+        var finalTrack = ruler.lineSlice(
+          realtimePrediction,
+          realtimePredictionEnd,
+          trip.coordinates
+        );
+        tracks.push({
+          line: finalTrack,
+          id: trip.tripId,
+          shortName: trip.shortName,
+          color: trip.color,
+          textColor: trip.textColor,
+          type: trip.type,
+          startDistance: parseFloat(realtimePredictionDistance).toFixed(4),
+          endDistance: parseFloat(realtimeFuturePredictionDistance).toFixed(4),
+          created: creationTime
+        });
+      });
+    }, 5000);
 
     setInterval(async () => {
       vilniusRealtime = await lithuania.getVilnius();
-    }, 3000);
+    }, 1000);
 
     setInterval(() => {
       var theTime = moment();
@@ -144,10 +207,11 @@ module.exports = async function(app, db) {
         }
       });
       vilniusStatic = staticVilnius;
-    }, 10000);
-  }, 30000);
+    }, 5000);
+  }, 20000);
 
   app.get("/realtime", (req, res) => {
+    console.time("realtime");
     res.contentType("json");
 
     var nwlon = req.query.nwlon;
@@ -160,54 +224,34 @@ module.exports = async function(app, db) {
     console.log(selon);
     console.log(selat);
 
-    var time = moment();
-    var seconds =
-      time.get("hour") * 3600 + time.get("minutes") * 60 + time.get("seconds");
-    var tracks = [];
+    var response = [];
 
-    matched.forEach(trip => {
-      //construct current tracks
-      //find where the realtimepoint lies on the track
-      var point = ruler.pointOnLine(trip.coordinates, trip.lastRealtime).point;
-      //split the track from that point to the end
-      var tempTrack = ruler.lineSlice(
-        point,
-        trip.coordinates[trip.coordinates.length - 1],
-        trip.coordinates
-      );
-      //find another predicted point based on how much time passed since last measurement
-      //find the end point where to split the line at the end
-      var time = trip.arrivalTime/1000 + trip.offset - trip.departureTime/1000;
-      var speed = trip.distance / time;
-      var secondsSinceMeasured = seconds - trip.lastMeasured;
-      var delta = speed * secondsSinceMeasured;
-      var endDelta = delta + speed * 15;
-      var realtimePrediction = ruler.along(tempTrack, delta);
-      var realtimePredictionEnd = ruler.along(tempTrack, endDelta);
+    tracks.forEach(track => {
       if (
-        !ruler.insideBBox(realtimePrediction, [nwlon, nwlat, selon, selat]) &&
-        !ruler.insideBBox(realtimePredictionEnd, [nwlon, nwlat, selon, selat])
+        !ruler.insideBBox(track.line[0], [nwlon, nwlat, selon, selat]) &&
+        !ruler.insideBBox(track.line[track.line.length - 1], [
+          nwlon,
+          nwlat,
+          selon,
+          selat
+        ])
       ) {
         return;
       }
-      var finalTrack = ruler.lineSlice(
-        realtimePrediction,
-        realtimePredictionEnd,
-        trip.coordinates
-      );
-      console.log(finalTrack)
-      var encoded = polyline.encode(finalTrack);
-      tracks.push({
+      var encoded = polyline.encode(track.line);
+      response.push({
         line: encoded,
-        id: trip.id,
-        shortName: trip.shortName,
-        color: trip.color,
-        textColor: trip.textColor,
-        type: trip.type
-      })
-
+        id: track.id,
+        shortName: track.shortName,
+        color: track.color,
+        textColor: track.textColor,
+        type: track.type,
+        startDistance: track.startDistance,
+        endDistance: track.endDistance,
+        created: track.created
+      });
     });
-
-    res.csv(tracks);
+    console.timeEnd("realtime");
+    res.csv(response);
   });
 };

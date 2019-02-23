@@ -29,6 +29,7 @@
     "node-fetch": "^2.3.0",
     "papaparse": "^4.6.3",
     "require-all": "^3.0.0",
+    "simplify-js": "^1.2.3",
     "tconsole": "^1.0.0",
     "turf-featurecollection": "^1.0.1",
     "turf-linestring": "^1.0.2",

@@ -145,7 +145,6 @@ module.exports = async function(app, db) {
 
     setInterval(async () => {
       vilniusRealtime = await lithuania.getVilnius();
-      console.log(vilniusRealtime)
     }, 1000);
 
     setInterval(() => {
@@ -209,6 +208,9 @@ module.exports = async function(app, db) {
   }, 20000);
 
   app.get("/realtime", (req, res) => {
+    console.log(vilniusStatic)
+    console.log(matched)
+    console.log(tracks)
     console.time("realtime");
     res.contentType("json");
 

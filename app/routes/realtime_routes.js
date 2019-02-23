@@ -19,6 +19,7 @@ module.exports = async function(app, db) {
   transit.importGTFS(
     "/Users/kgudzius/raiditRealtime/app/data/vilnius",
     function(err) {
+      console.log(err)
       console.log("ready");
     }
   );
@@ -157,14 +158,12 @@ module.exports = async function(app, db) {
 
       var date = new Date().toISOString().slice(0, 10);
       var staticVilnius = [];
-      console.log(transit.trips.length)
 
       transit.trips.forEach(trip => {
         //check if trip is opearating on the day
         if (!trip.service.operating(date)) {
           return;
         }
-        console.log(trip)
         //getting arrival time and departure time
         var depTime = trip.stops["1"].departure;
         var lastId = parseInt(trip.stops._lastId);

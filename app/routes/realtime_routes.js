@@ -145,6 +145,7 @@ module.exports = async function(app, db) {
 
     setInterval(async () => {
       vilniusRealtime = await lithuania.getVilnius();
+      console.log(vilniusRealtime)
     }, 1000);
 
     setInterval(() => {

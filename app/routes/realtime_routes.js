@@ -24,7 +24,6 @@ module.exports = async function(app, db) {
   );
   setTimeout(() => {
     console.log("ready");
-
     setInterval(() => {
       var matchedTrips = [];
       console.log("entered");
@@ -81,7 +80,7 @@ module.exports = async function(app, db) {
           predictedDistanceOffset: max.distance
         });
       });
-
+      console.log(matched)
       matched = matchedTrips;
     }, 5000);
 
@@ -144,6 +143,7 @@ module.exports = async function(app, db) {
           created: creationTime
         });
       });
+      console.log(tracks)
     }, 5000);
 
     setInterval(async () => {
@@ -207,6 +207,7 @@ module.exports = async function(app, db) {
         }
       });
       vilniusStatic = staticVilnius;
+      console.log(vilniusStatic)
     }, 5000);
   }, 20000);
 

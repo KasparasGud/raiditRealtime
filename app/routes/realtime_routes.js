@@ -197,7 +197,7 @@ module.exports = async function(app, db) {
             distance: distance,
             predictedPos: position
           };
-
+          console.log(line)
           staticVilnius.push(line);
 
           return;

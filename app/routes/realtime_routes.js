@@ -17,9 +17,9 @@ module.exports = async function(app, db) {
   var tracks = [];
 
   transit.importGTFS(
-    "/Users/kgudzius/raiditRealtime/app/data/vilnius",
+    //TODO CREATE A WAY FOR AUTO FETCHING NEWEST GTFS
+    "/home/ubuntu/raiditRealtime/app/data/vilnius",
     function(err) {
-      console.log(err)
       console.log("ready");
     }
   );

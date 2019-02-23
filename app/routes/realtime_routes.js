@@ -163,7 +163,7 @@ module.exports = async function(app, db) {
         if (!trip.service.operating(date)) {
           return;
         }
-
+        console.log(trip)
         //getting arrival time and departure time
         var depTime = trip.stops["1"].departure;
         var lastId = parseInt(trip.stops._lastId);
@@ -178,6 +178,7 @@ module.exports = async function(app, db) {
         var arrivalTime = moment(date2).valueOf();
 
         if (arrivalTime > now && departureTime < now) {
+          console.log('entered now timeframe')
           var coords = trip.shape.map(item => [item.lon, item.lat]);
           var time = arrivalTime / 1000 - departureTime / 1000;
           var distance = ruler.lineDistance(coords);
@@ -197,7 +198,7 @@ module.exports = async function(app, db) {
             distance: distance,
             predictedPos: position
           };
-          console.log(line)
+          
           staticVilnius.push(line);
 
           return;

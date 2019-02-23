@@ -1,4 +1,4 @@
-var moment = require("moment");
+var moment = require("moment-timezone");
 var Transit = require("../lib/transit");
 var turf = require("../lib/utils/turf");
 var cheapRuler = require("cheap-ruler");
@@ -26,7 +26,6 @@ module.exports = async function(app, db) {
     console.log("ready");
     setInterval(() => {
       var matchedTrips = [];
-      console.log("entered");
       vilniusStatic.forEach(static => {
         var matchingRealtimes = [];
         vilniusRealtime.forEach(realtime => {
@@ -80,13 +79,12 @@ module.exports = async function(app, db) {
           predictedDistanceOffset: max.distance
         });
       });
-      console.log(matched)
       matched = matchedTrips;
     }, 5000);
 
     setInterval(() => {
       var creationTime = moment().valueOf();
-      var theTime = moment();
+      var theTime = moment().tz('Europe/Vilnius');
       var seconds =
         theTime.get("hour") * 3600 +
         theTime.get("minutes") * 60 +
@@ -143,7 +141,6 @@ module.exports = async function(app, db) {
           created: creationTime
         });
       });
-      console.log(tracks)
     }, 5000);
 
     setInterval(async () => {
@@ -151,7 +148,7 @@ module.exports = async function(app, db) {
     }, 1000);
 
     setInterval(() => {
-      var theTime = moment();
+      var theTime = moment().tz('Europe/Vilnius');
       var now = theTime.valueOf();
       var seconds =
         theTime.get("hour") * 3600 +
@@ -207,7 +204,6 @@ module.exports = async function(app, db) {
         }
       });
       vilniusStatic = staticVilnius;
-      console.log(vilniusStatic)
     }, 5000);
   }, 20000);
 
@@ -219,11 +215,6 @@ module.exports = async function(app, db) {
     var nwlat = req.query.nwlat;
     var selon = req.query.selon;
     var selat = req.query.selat;
-
-    console.log(nwlon);
-    console.log(nwlat);
-    console.log(selon);
-    console.log(selat);
 
     var response = [];
 

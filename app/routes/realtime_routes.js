@@ -18,7 +18,8 @@ module.exports = async function(app, db) {
 
   transit.importGTFS(
     //TODO CREATE A WAY FOR AUTO FETCHING NEWEST GTFS
-    "/home/ubuntu/raiditRealtime/app/data/vilnius",
+    //"/Users/kgudzius/raiditRealtime/app/data/vilnius",
+     "/home/ubuntu/raiditRealtime/app/data/vilnius",
     function(err) {
       console.log("ready");
     }
@@ -36,12 +37,12 @@ module.exports = async function(app, db) {
             (static.departureSinceMidnigth ===
               parseInt(realtime.ReisoPradziaMinutemis) ||
               static.departureSinceMidnigth - 1 ===
-                parseInt(realtime.ReisoPradziaMinutemis))
+                parseInt(realtime.ReisoPradziaMinutemis) )
           ) {
             matchingRealtimes.push(realtime);
           }
         });
-
+        
         if (matchingRealtimes.length === 0) {
           return;
         }
@@ -55,7 +56,6 @@ module.exports = async function(app, db) {
         }));
 
         var max = newRealtimes[0];
-
         newRealtimes.forEach(element => {
           if (max.distance > element.distance) {
             max = element;
@@ -84,13 +84,13 @@ module.exports = async function(app, db) {
 
     setInterval(() => {
       var creationTime = moment().valueOf();
-      var theTime = moment().tz('Europe/Vilnius');
+      var theTime = moment().tz("Europe/Vilnius");
       var seconds =
         theTime.get("hour") * 3600 +
         theTime.get("minutes") * 60 +
         theTime.get("seconds");
       tracks = [];
-      matched.forEach((trip,index) => {
+      matched.forEach((trip, index) => {
         //construct current tracks
         //find where the realtimepoint lies on the track
         var point = ruler.pointOnLine(trip.coordinates, trip.lastRealtime)
@@ -107,10 +107,10 @@ module.exports = async function(app, db) {
         var time =
           trip.arrivalTime / 1000 + trip.offset - trip.departureTime / 1000;
         var staticSpeed = trip.distance / time;
-        var speed = staticSpeed / 1.1
-        if(trip.lastSpeed === 0) {
-          speed = staticSpeed / 2
-        }
+        var speed = staticSpeed;
+        // if (trip.lastSpeed === 0) {
+        //   speed = staticSpeed / 2;
+        // }
         var secondsSinceMeasured = seconds - trip.lastMeasured;
         var delta = speed * secondsSinceMeasured;
         var realtimePredictionDistance = discardedDistance + delta;
@@ -148,7 +148,7 @@ module.exports = async function(app, db) {
     }, 1000);
 
     setInterval(() => {
-      var theTime = moment().tz('Europe/Vilnius');
+      var theTime = moment().tz("Europe/Vilnius");
       var now = theTime.valueOf();
       var seconds =
         theTime.get("hour") * 3600 +
@@ -163,6 +163,10 @@ module.exports = async function(app, db) {
         if (!trip.service.operating(date)) {
           return;
         }
+        // if(trip._shapeId === 'vilnius_nightbus_88N_a-b') {
+        //   console.log(trip)
+        // }
+        //night bus prob fuckded bczs e.g 24:11 time
         //getting arrival time and departure time
         var depTime = trip.stops["1"].departure;
         var lastId = parseInt(trip.stops._lastId);
@@ -175,7 +179,6 @@ module.exports = async function(app, db) {
         var sinceMidnight = parseInt(hMin) + parseInt(min);
         var date2 = moment(date).format("YYYY-MM-DD") + " " + arrTime;
         var arrivalTime = moment(date2).valueOf();
-
         if (arrivalTime > now && departureTime < now) {
           var coords = trip.shape.map(item => [item.lon, item.lat]);
           var time = arrivalTime / 1000 - departureTime / 1000;
@@ -196,7 +199,7 @@ module.exports = async function(app, db) {
             distance: distance,
             predictedPos: position
           };
-          
+
           staticVilnius.push(line);
 
           return;

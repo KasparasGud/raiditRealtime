@@ -244,6 +244,7 @@ module.exports = async function(app, db) {
         created: track.created
       });
     });
+    console.log(response.length)
     res.csv(response);
   });
 };

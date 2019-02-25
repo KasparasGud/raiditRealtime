@@ -217,14 +217,6 @@ module.exports = async function(app, db) {
     var selon = req.query.selon;
     var selat = req.query.selat;
 
-    var offsetlon = Math.abs(selon - nwlon) / 3 ;
-    var offsetlat = Math.abs(selat - selon) / 3
-
-    nwlon = nwlon - offsetlon;
-    nwlat = nwlat - offsetlat;
-    selon = selon + offsetlon;
-    selat = selat + offsetlat;
-
     var response = [];
 
     tracks.forEach(track => {

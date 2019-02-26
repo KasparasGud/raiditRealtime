@@ -69,7 +69,9 @@ module.exports = async function(app, db) {
           coordinates: static.coords,
           tripId: static.tripId,
           lastRealtime: [max.Ilguma / 1000000, max.Platuma / 1000000],
-          lastMeasured: max.MatavimoLaikas,
+          lastMeasured: static.yesterday
+            ? max.MatavimoLaikas - 86400
+            : max.MatavimoLaikas,
           lastSpeed: parseInt(max.Greitis),
           shortName: static.routeShortName,
           color: static.routeColor,
@@ -160,27 +162,28 @@ module.exports = async function(app, db) {
         .toISOString()
         .slice(0, 10);
       var staticVilnius = [];
-      console.time('foreach')
       transit.trips.forEach(trip => {
         var depTime = trip.stops["1"].departure;
         var depArray = depTime.split(":");
         var yesterdaysTrip = false;
-        if (!trip.service.operating(yesterday)) {
-          if(depArray[0]>=24) {
+        if (trip.service.operating(yesterday)) {
+          if (depArray[0] >= 24) {
             yesterdaysTrip = true;
-            depTime = '0' + parseInt(depArray[0] - 24) + ':' + depArray[1] + ':00';
+            depTime =
+              "0" + parseInt(depArray[0] - 24) + ":" + depArray[1] + ":00";
           }
         }
         //check if trip is opearating on the day
         if (!trip.service.operating(today) && !yesterdaysTrip) {
           return;
         }
-        
+
         var lastId = parseInt(trip.stops._lastId);
         var arrTime = trip.stops[lastId + ""].departure;
-        if(yesterdaysTrip) {
-          var arrArray = arrTime.split(':');
-          arrTime = '0' + parseInt(arrArray[0] - 24) + ':' + arrArray[1] + ':00';
+        var arrArray = arrTime.split(":");
+        if (yesterdaysTrip) {
+          arrTime =
+            "0" + parseInt(arrArray[0] - 24) + ":" + arrArray[1] + ":00";
         }
         //converting to unix timestamps
         var departureTime = moment(today)
@@ -188,14 +191,12 @@ module.exports = async function(app, db) {
           .add(depArray[0], "hours")
           .add(depArray[1], "minutes")
           .valueOf();
-        //might not work for 25 26 hours...
         var hMin = moment(departureTime).get("hours") * 60;
         var min = moment(departureTime).get("minutes");
-        var sinceMidnight = parseInt(hMin) + parseInt(min); 
-        if(yesterdaysTrip) {
+        var sinceMidnight = parseInt(hMin) + parseInt(min);
+        if (yesterdaysTrip) {
           sinceMidnight = sinceMidnight + 1440;
         }
-        var arrArray = arrTime.split(":");
         var arrivalTime = moment(today)
           .startOf("day")
           .add(arrArray[0], "hours")
@@ -209,6 +210,7 @@ module.exports = async function(app, db) {
           var progress = (now / 1000 - departureTime / 1000) * speed;
           var position = ruler.along(coords, progress);
           var line = {
+            yesterday: yesterdaysTrip,
             coords: coords,
             tripId: trip.id,
             routeShortName: trip.route.shortName,
@@ -225,7 +227,6 @@ module.exports = async function(app, db) {
           return;
         }
       });
-      console.timeEnd('foreach')
       vilniusStatic = staticVilnius;
     }, 5000);
   }, 7500);
@@ -265,7 +266,6 @@ module.exports = async function(app, db) {
         created: track.created
       });
     });
-    console.log(response.length);
     res.csv(response);
   });
 };

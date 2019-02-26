@@ -18,8 +18,8 @@ module.exports = async function(app, db) {
 
   transit.importGTFS(
     //TODO CREATE A WAY FOR AUTO FETCHING NEWEST GTFS
-    //"/Users/kgudzius/raiditRealtime/app/data/vilnius",
-     "/home/ubuntu/raiditRealtime/app/data/vilnius",
+    "/Users/kgudzius/raiditRealtime/app/data/vilnius",
+    //"/home/ubuntu/raiditRealtime/app/data/vilnius",
     function(err) {
       console.log("ready");
     }
@@ -37,12 +37,12 @@ module.exports = async function(app, db) {
             (static.departureSinceMidnigth ===
               parseInt(realtime.ReisoPradziaMinutemis) ||
               static.departureSinceMidnigth - 1 ===
-                parseInt(realtime.ReisoPradziaMinutemis) )
+                parseInt(realtime.ReisoPradziaMinutemis))
           ) {
             matchingRealtimes.push(realtime);
           }
         });
-        
+
         if (matchingRealtimes.length === 0) {
           return;
         }
@@ -155,30 +155,52 @@ module.exports = async function(app, db) {
         theTime.get("minutes") * 60 +
         theTime.get("seconds");
 
-      var date = new Date().toISOString().slice(0, 10);
+      var today = new Date().toISOString().slice(0, 10);
+      var yesterday = new Date(new Date().setDate(new Date().getDate() - 1))
+        .toISOString()
+        .slice(0, 10);
       var staticVilnius = [];
-
+      console.time('foreach')
       transit.trips.forEach(trip => {
+        var depTime = trip.stops["1"].departure;
+        var depArray = depTime.split(":");
+        var yesterdaysTrip = false;
+        if (!trip.service.operating(yesterday)) {
+          if(depArray[0]>=24) {
+            yesterdaysTrip = true;
+            depTime = '0' + parseInt(depArray[0] - 24) + ':' + depArray[1] + ':00';
+          }
+        }
         //check if trip is opearating on the day
-        if (!trip.service.operating(date)) {
+        if (!trip.service.operating(today) && !yesterdaysTrip) {
           return;
         }
-        // if(trip._shapeId === 'vilnius_nightbus_88N_a-b') {
-        //   console.log(trip)
-        // }
-        //night bus prob fuckded bczs e.g 24:11 time
-        //getting arrival time and departure time
-        var depTime = trip.stops["1"].departure;
+        
         var lastId = parseInt(trip.stops._lastId);
         var arrTime = trip.stops[lastId + ""].departure;
+        if(yesterdaysTrip) {
+          var arrArray = arrTime.split(':');
+          arrTime = '0' + parseInt(arrArray[0] - 24) + ':' + arrArray[1] + ':00';
+        }
         //converting to unix timestamps
-        var date = moment(date).format("YYYY-MM-DD") + " " + depTime;
-        var departureTime = moment(date).valueOf();
-        var hMin = moment(date).get("hours") * 60;
-        var min = moment(date).get("minutes");
-        var sinceMidnight = parseInt(hMin) + parseInt(min);
-        var date2 = moment(date).format("YYYY-MM-DD") + " " + arrTime;
-        var arrivalTime = moment(date2).valueOf();
+        var departureTime = moment(today)
+          .startOf("day")
+          .add(depArray[0], "hours")
+          .add(depArray[1], "minutes")
+          .valueOf();
+        //might not work for 25 26 hours...
+        var hMin = moment(departureTime).get("hours") * 60;
+        var min = moment(departureTime).get("minutes");
+        var sinceMidnight = parseInt(hMin) + parseInt(min); 
+        if(yesterdaysTrip) {
+          sinceMidnight = sinceMidnight + 1440;
+        }
+        var arrArray = arrTime.split(":");
+        var arrivalTime = moment(today)
+          .startOf("day")
+          .add(arrArray[0], "hours")
+          .add(arrArray[1], "minutes")
+          .valueOf();
         if (arrivalTime > now && departureTime < now) {
           var coords = trip.shape.map(item => [item.lon, item.lat]);
           var time = arrivalTime / 1000 - departureTime / 1000;
@@ -199,15 +221,14 @@ module.exports = async function(app, db) {
             distance: distance,
             predictedPos: position
           };
-
           staticVilnius.push(line);
-
           return;
         }
       });
+      console.timeEnd('foreach')
       vilniusStatic = staticVilnius;
     }, 5000);
-  }, 20000);
+  }, 7500);
 
   app.get("/realtime", (req, res) => {
     res.contentType("json");
@@ -244,7 +265,7 @@ module.exports = async function(app, db) {
         created: track.created
       });
     });
-    console.log(response.length)
+    console.log(response.length);
     res.csv(response);
   });
 };

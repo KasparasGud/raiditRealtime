@@ -5,6 +5,7 @@ var cheapRuler = require("cheap-ruler");
 var polyline = require("@mapbox/polyline");
 var csv = require("csv-express");
 var lithuania = require("../fetchers/lithuania");
+const GtfsRealtimeBindings = require("gtfs-realtime-bindings");
 
 var ruler = cheapRuler(54.6);
 
@@ -18,8 +19,8 @@ module.exports = async function(app, db) {
 
   transit.importGTFS(
     //TODO CREATE A WAY FOR AUTO FETCHING NEWEST GTFS
-    //"/Users/kgudzius/raiditRealtime/app/data/vilnius",
-    "/home/ubuntu/raiditRealtime/app/data/vilnius",
+    "/Users/kgudzius/raiditRealtime/app/data/vilnius",
+    //"/home/ubuntu/raiditRealtime/app/data/vilnius",
     function(err) {
       console.log("ready");
     }
@@ -68,8 +69,12 @@ module.exports = async function(app, db) {
           distance: static.distance,
           coordinates: static.coords,
           tripId: static.tripId,
+          routeId: static.routeId,
+          stoptimes: static.stoptimes,
+          vehicleId: max.ReisoID,
+          label: max.MasinosNumeris,
           lastRealtime: [max.Ilguma / 1000000, max.Platuma / 1000000],
-          lastMeasured: static.yesterday
+          lastMeasured: static.yesterday //could fuck up gtfs rt feeds
             ? max.MatavimoLaikas - 86400
             : max.MatavimoLaikas,
           lastSpeed: parseInt(max.Greitis),
@@ -162,10 +167,12 @@ module.exports = async function(app, db) {
         .toISOString()
         .slice(0, 10);
       var staticVilnius = [];
-      transit.trips.forEach(trip => {
+      console.time("foreach");
+      transit.trips.forEach((trip, index) => {
         var depTime = trip.stops["1"].departure;
         var depArray = depTime.split(":");
         var yesterdaysTrip = false;
+
         if (trip.service.operating(yesterday)) {
           if (depArray[0] >= 24) {
             yesterdaysTrip = true;
@@ -203,6 +210,19 @@ module.exports = async function(app, db) {
           .add(arrArray[1], "minutes")
           .valueOf();
         if (arrivalTime > now && departureTime < now) {
+          var stops = [];
+          for (i = 1; i < lastId; i++) {
+            var deps = trip.stops[i + ""].departure.split(":");
+            stops.push({
+              id: trip.stops[i + ""]._stopId,
+              departure: moment()
+                .startOf("day")
+                .add(parseInt(deps[0]), "hours")
+                .add(parseInt(deps[1]), "minutes")
+                .valueOf()
+            });
+          }
+
           var coords = trip.shape.map(item => [item.lon, item.lat]);
           var time = arrivalTime / 1000 - departureTime / 1000;
           var distance = ruler.lineDistance(coords);
@@ -212,7 +232,9 @@ module.exports = async function(app, db) {
           var line = {
             yesterday: yesterdaysTrip,
             coords: coords,
+            stoptimes: stops,
             tripId: trip.id,
+            routeId: trip.route.id,
             routeShortName: trip.route.shortName,
             routeColor: "#" + trip.route.color,
             routeTextColor: "#" + trip.route.textColor,
@@ -227,9 +249,77 @@ module.exports = async function(app, db) {
           return;
         }
       });
+      console.timeEnd("foreach");
       vilniusStatic = staticVilnius;
     }, 5000);
   }, 7500);
+
+  app.get("/api/vilnius/trip-updates", (req, res) => {
+    try {
+      let message = new GtfsRealtimeBindings.FeedMessage();
+      let header = new GtfsRealtimeBindings.FeedHeader();
+      header.gtfs_realtime_version = "1.0";
+      header.incrementality = 0;
+      header.timestamp = new Date().getTime() / 1000;
+
+      let entities = [];
+
+      console.log(matched.length);
+      matched.forEach(transport => {
+        const updatedAt =
+          moment()
+            .startOf("day")
+            .add(transport.lastMeasured, "seconds")
+            .valueOf() / 1000;
+
+        let vehicleDescriptor = new GtfsRealtimeBindings.VehicleDescriptor();
+        vehicleDescriptor.id = transport.vehicleId;
+        vehicleDescriptor.label = transport.label;
+
+        let tripDescriptor = new GtfsRealtimeBindings.TripDescriptor();
+        tripDescriptor.trip_id = transport.tripId;
+        tripDescriptor.route_id = transport.routeId;
+
+        const now = moment().valueOf();
+        let nextStopId = transport.stoptimes[0].id;
+        for (i = 0; i < transport.stoptimes.length; i++) {
+          if (now - transport.stoptimes[i].departure < 0) {
+            nextStopId = transport.stoptimes[i].id;
+            break;
+          }
+        }
+
+        let stopTimeEvent = new GtfsRealtimeBindings.TripUpdate.StopTimeEvent();
+        stopTimeEvent.delay = transport.offset;
+
+        let stopTimeUpdate = new GtfsRealtimeBindings.TripUpdate.StopTimeUpdate();
+        stopTimeUpdate.stop_id = nextStopId;
+        stopTimeUpdate.departure = stopTimeEvent;
+
+        let tripUpdate = new GtfsRealtimeBindings.TripUpdate();
+        tripUpdate.trip = tripDescriptor;
+        tripUpdate.vehicle = vehicleDescriptor;
+        tripUpdate.delay = transport.offset;
+        tripUpdate.timestamp = updatedAt;
+        tripUpdate.stop_time_update = stopTimeUpdate;
+
+        let entity = new GtfsRealtimeBindings.FeedEntity();
+        entity.id = transport.vehicleId;
+        entity.trip_update = tripUpdate;
+        entity.is_deleted = null;
+        entities.push(entity);
+        //entity.vehicle = vehiclePosition;
+      });
+      message.header = header;
+      message.entity = entities;
+      res
+        .status(200)
+        .header("Content-Type", "application/x-protobuf")
+        .send(message.encode().toBuffer());
+    } catch (error) {
+      console.log(error);
+    }
+  });
 
   app.get("/realtime", (req, res) => {
     res.contentType("json");

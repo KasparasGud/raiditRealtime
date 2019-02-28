@@ -80,14 +80,12 @@ vilnius_bus_89,"89","Nepriklausomybės aikštė–Senamiestis–Rasų g.–Stoti
 vilnius_bus_114,"114","Šiaurės miestelis–Antakalnis–Mileišiškių –S.Kerbedžio g.–Dvarčionys–Vinciūniškės",,3,https://www.stops.lt/vilnius/index.html#vilnius/bus/114,0073AC,FFFFFF
 vilnius_bus_115,"115","Antakalnis–Rokantiškės–Parko g.",,3,https://www.stops.lt/vilnius/index.html#vilnius/bus/115,0073AC,FFFFFF
 vilnius_bus_116,"116","Žvėrynas–Gudelių šilas–Lazdynai–Ungurių g.",,3,https://www.stops.lt/vilnius/index.html#vilnius/bus/116,0073AC,FFFFFF
-vilnius_bus_177R,"177R","Parodų rūmai–Ozo g.",,3,https://www.stops.lt/vilnius/index.html#vilnius/bus/177R,0073AC,FFFFFF
 vilnius_nightbus_88N,"88N","Oro uostas–Centras–Europos aikštė",,3,https://www.stops.lt/vilnius/index.html#vilnius/nightbus/88N,0073AC,FFFFFF
 vilnius_nightbus_101N,"101N","Saulėtekis–Žygimantų g.–Savanorių–Laisvės pr.–Fabijoniškės",,3,https://www.stops.lt/vilnius/index.html#vilnius/nightbus/101N,0073AC,FFFFFF
 vilnius_nightbus_102N,"102N","Pilaitė–Žvėrynas–Žygimantų–Maironio g.–Stotis",,3,https://www.stops.lt/vilnius/index.html#vilnius/nightbus/102N,0073AC,FFFFFF
 vilnius_nightbus_103N,"103N","Santariškės–Didlaukio–Kalvarijų–Pylimo g.–Stotis–Gerosios Vilties st.",,3,https://www.stops.lt/vilnius/index.html#vilnius/nightbus/103N,0073AC,FFFFFF
 vilnius_nightbus_104N,"104N","Ateities–Žirmūnų–Pylimo g.–Naujininkai",,3,https://www.stops.lt/vilnius/index.html#vilnius/nightbus/104N,0073AC,FFFFFF
 vilnius_nightbus_105N,"105N","Pašilaičiai–Šeškinė–Konstitucijos pr.–Žygimantų–Olandų g.–Pavilnys–Parko g.",,3,https://www.stops.lt/vilnius/index.html#vilnius/nightbus/105N,0073AC,FFFFFF
-vilnius_bus_SU–MENĖK,"SU–MENĖK","Antano Tumėno st.–Senamiestis",,3,https://www.stops.lt/vilnius/index.html#vilnius/bus/SU–MENĖK,0073AC,FFFFFF
 vilnius_trol_1,"1","Karoliniškės–Žvėrynas–Stotis",,800,https://www.stops.lt/vilnius/index.html#vilnius/trol/1,DC3131,FFFFFF
 vilnius_trol_2,"2","Saulėtekis–Žygimantų g.–Stotis",,800,https://www.stops.lt/vilnius/index.html#vilnius/trol/2,DC3131,FFFFFF
 vilnius_trol_3,"3","Karoliniškės–Žvėrynas–Šeimyniškių g.",,800,https://www.stops.lt/vilnius/index.html#vilnius/trol/3,DC3131,FFFFFF

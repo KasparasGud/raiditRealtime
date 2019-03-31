@@ -26,6 +26,11 @@ module.exports = async function(app, db) {
     }
   );
   setTimeout(() => {
+    console.log('Static length: ' + vilniusStatic.length)
+    console.log('Realtime length: ' + vilniusRealtime.length)
+    console.log('Matched length: ' + matched.length)
+  }, 60000);
+  setTimeout(() => {
     setInterval(() => {
       var matchedTrips = [];
       vilniusStatic.forEach(static => {
@@ -86,11 +91,12 @@ module.exports = async function(app, db) {
           predictedDistanceOffset: max.distance
         });
       });
+      //console.log('matched length ' + matched.length)
       matched = matchedTrips;
-    }, 5000);
+    }, 20000);
 
     setInterval(() => {
-      var creationTime = moment().valueOf();
+      var creationTime = moment().tz("Europe/Vilnius").valueOf();
       var theTime = moment().tz("Europe/Vilnius");
       var seconds =
         theTime.get("hour") * 3600 +
@@ -148,11 +154,12 @@ module.exports = async function(app, db) {
           created: creationTime
         });
       });
-    }, 5000);
+    }, 15000);
 
     setInterval(async () => {
       vilniusRealtime = await lithuania.getVilnius();
-    }, 1000);
+      //console.log('realtime length: ' + vilniusRealtime.length)
+    }, 10000);
 
     setInterval(() => {
       var theTime = moment().tz("Europe/Vilnius");
@@ -162,12 +169,10 @@ module.exports = async function(app, db) {
         theTime.get("minutes") * 60 +
         theTime.get("seconds");
 
-      var today = new Date().toISOString().slice(0, 10);
-      var yesterday = new Date(new Date().setDate(new Date().getDate() - 1))
-        .toISOString()
-        .slice(0, 10);
+      var today = moment().tz("Europe/Vilnius").format("YYYY-MM-DD");
+      var yesterday = moment().tz("Europe/Vilnius").subtract(1,'day').format("YYYY-MM-DD")
       var staticVilnius = [];
-      console.time("foreach");
+      //console.time("foreach");
       transit.trips.forEach((trip, index) => {
         var depTime = trip.stops["1"].departure;
         var depArray = depTime.split(":");
@@ -193,18 +198,18 @@ module.exports = async function(app, db) {
             "0" + parseInt(arrArray[0] - 24) + ":" + arrArray[1] + ":00";
         }
         //converting to unix timestamps
-        var departureTime = moment(today)
+        var departureTime = moment().tz("Europe/Vilnius")
           .startOf("day")
           .add(depArray[0], "hours")
           .add(depArray[1], "minutes")
           .valueOf();
-        var hMin = moment(departureTime).get("hours") * 60;
-        var min = moment(departureTime).get("minutes");
+        var hMin = moment(departureTime).tz("Europe/Vilnius").get("hours") * 60;
+        var min = moment(departureTime).tz("Europe/Vilnius").get("minutes");
         var sinceMidnight = parseInt(hMin) + parseInt(min);
         if (yesterdaysTrip) {
           sinceMidnight = sinceMidnight + 1440;
         }
-        var arrivalTime = moment(today)
+        var arrivalTime = moment().tz("Europe/Vilnius")
           .startOf("day")
           .add(arrArray[0], "hours")
           .add(arrArray[1], "minutes")
@@ -215,7 +220,7 @@ module.exports = async function(app, db) {
             var deps = trip.stops[i + ""].departure.split(":");
             stops.push({
               id: trip.stops[i + ""]._stopId,
-              departure: moment()
+              departure: moment().tz("Europe/Vilnius")
                 .startOf("day")
                 .add(parseInt(deps[0]), "hours")
                 .add(parseInt(deps[1]), "minutes")
@@ -249,10 +254,11 @@ module.exports = async function(app, db) {
           return;
         }
       });
-      console.timeEnd("foreach");
+      //console.timeEnd("foreach");
+      //console.log('vilnius static length: ' + staticVilnius.length)
       vilniusStatic = staticVilnius;
-    }, 5000);
-  }, 7500);
+    }, 15000);
+  }, 25000);
 
   app.get("/api/vilnius/trip-updates", (req, res) => {
     try {
@@ -260,14 +266,12 @@ module.exports = async function(app, db) {
       let header = new GtfsRealtimeBindings.FeedHeader();
       header.gtfs_realtime_version = "1.0";
       header.incrementality = 0;
-      header.timestamp = new Date().getTime() / 1000;
+      header.timestamp = moment().tz("Europe/Vilnius").valueOf() / 1000;
 
       let entities = [];
-
-      console.log(matched.length);
       matched.forEach(transport => {
         const updatedAt =
-          moment()
+          moment().tz("Europe/Vilnius")
             .startOf("day")
             .add(transport.lastMeasured, "seconds")
             .valueOf() / 1000;
@@ -280,7 +284,7 @@ module.exports = async function(app, db) {
         tripDescriptor.trip_id = transport.tripId;
         tripDescriptor.route_id = transport.routeId;
 
-        const now = moment().valueOf();
+        const now = moment().tz("Europe/Vilnius").valueOf();
         let nextStopId = transport.stoptimes[0].id;
         for (i = 0; i < transport.stoptimes.length; i++) {
           if (now - transport.stoptimes[i].departure < 0) {

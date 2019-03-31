@@ -1,5 +1,0 @@
-﻿fare_id,price,currency_type,payment_method,transfers,transfer_duration
-80,1.00,EUR,0,0,
-58,0.70,EUR,1,1,1800
-180,1.30,EUR,0,0,
-158,1.30,EUR,1,1,1800
